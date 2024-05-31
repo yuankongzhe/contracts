@@ -67,7 +67,10 @@ contract OpenAiChatGpt {
         emit OracleAddressUpdated(newOracleAddress);
     }
 
-    function createCharacterSheet(string memory user_name, string memory character_class) public returns (uint i) {
+        function createCharacterSheet(
+        string memory user_name, 
+        string memory character_class
+    ) public returns (uint i) {
         ChatRun storage run = chatRuns[chatRunsCount];
 
         run.owner = msg.sender;
@@ -79,6 +82,8 @@ contract OpenAiChatGpt {
 
         uint currentId = chatRunsCount;
         chatRunsCount = chatRunsCount + 1;
+
+        string memory systemPrompt = "You are an assistant to the Game Master in an RPG game, responsible for initializing character sheets. Here is an example of a character sheet:\n\n#<Responsibilities>\n- Generate a character sheet based on the character's class.\n- There must be at least 1 and at most 3 healing potions in the miscellaneous items.\n- Do not output any other content.\n\n#<Example>\n| Name: Lucia - Class: Wizard |        |\n|-----------------|--------|\n| Race: Human     | Level: 1|\n| **HP:** 8/12    | **MP:** 14/14|\n| **EXP:** 0/100  |        |\n| **ATK:** 3      | **DEF:** 2|\n\n**Skills:**\n- Spellcrafting\n- Arcane Research\n- Detect Magic\n\n**Features:**\n- Magic Affinity\n  - Description: +1 to spell attacks/saves\n- Arcane Reservoir\n  - Description: 2 1st-level, 3 2nd-level spell slots\n\n**Equipment:**\n- Wand (1d6 spell damage)\n- Wizard's pack\n- Healing Potion x1\n- Potion of Invisibility x1\n- Scroll of Magic Missile x1\n\n**Gold:** 50 GP ---\n";
 
         IOracle.OpenAiRequest memory characterSheetConfig = IOracle.OpenAiRequest({
             model : "gpt-4-turbo-preview",
@@ -95,6 +100,12 @@ contract OpenAiChatGpt {
             toolChoice : "none",
             user : ""
         });
+
+        Message memory systemMessage;
+        systemMessage.content = systemPrompt;
+        systemMessage.role = "system";
+        run.messages.push(systemMessage);
+        run.messagesCount++;
 
         IOracle(oracleAddress).createOpenAiLlmCall(currentId, characterSheetConfig);
         emit ChatCreated(msg.sender, currentId);
