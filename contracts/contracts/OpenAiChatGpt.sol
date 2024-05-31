@@ -67,12 +67,12 @@ contract OpenAiChatGpt {
         emit OracleAddressUpdated(newOracleAddress);
     }
 
-    function startChat(string memory message) public returns (uint i) {
+    function createCharacterSheet(string memory user_name, string memory character_class) public returns (uint i) {
         ChatRun storage run = chatRuns[chatRunsCount];
 
         run.owner = msg.sender;
         Message memory newMessage;
-        newMessage.content = message;
+        newMessage.content = string(abi.encodePacked("Character name:", user_name, ", character class: ", character_class, ", fill in the rest values, including abilities, features and equipments randomly base on D&D game settings"));
         newMessage.role = "user";
         run.messages.push(newMessage);
         run.messagesCount = 1;
@@ -80,7 +80,23 @@ contract OpenAiChatGpt {
         uint currentId = chatRunsCount;
         chatRunsCount = chatRunsCount + 1;
 
-        IOracle(oracleAddress).createOpenAiLlmCall(currentId, config);
+        IOracle.OpenAiRequest memory characterSheetConfig = IOracle.OpenAiRequest({
+            model : "gpt-4-turbo-preview",
+            frequencyPenalty : 6,
+            logitBias : "",
+            maxTokens : 500,
+            presencePenalty : 6,
+            responseFormat : "{\"type\":\"text\"}",
+            seed : 0,
+            stop : "",
+            temperature : 9,
+            topP : 9,
+            tools : "",
+            toolChoice : "none",
+            user : ""
+        });
+
+        IOracle(oracleAddress).createOpenAiLlmCall(currentId, characterSheetConfig);
         emit ChatCreated(msg.sender, currentId);
 
         return currentId;
